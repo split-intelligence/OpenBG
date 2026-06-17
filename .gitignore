@@ -1,6 +1,7 @@
 .mypy_cache
 .pytest_cache
 bg_env
-models
+models/u2net.onnx
 build
 dist
+.gitattributes
