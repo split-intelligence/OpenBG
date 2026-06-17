@@ -1,18 +1,59 @@
-from engine.preprocess import preprocess_image
-from engine.postprocess import postprocess_mask
-from engine.inference import U2NetRunner
-from export.png_export import save_png
 
-runner = U2NetRunner("models/u2net.onnx")
+import os
+from dataclasses import dataclass
 
-def remove_background(image_path):
 
-    image, original = preprocess_image(image_path)
+@dataclass(frozen=True)
+class ProgressUpdate:
+    stage: str
+    label: str
+    percent: int | None
+    busy: bool = False
 
-    mask = runner.predict(image)
 
-    refined_mask = postprocess_mask(mask, original.shape)
+def build_output_path(image_path):
+    base, _ = os.path.splitext(image_path)
+    return f"{base}_nobg.png"
 
-    output_path = save_png(original, refined_mask, image_path)
 
-    return output_path
+def _report(progress_callback, update):
+    if progress_callback:
+        progress_callback(update)
+
+
+def remove_background(image_path, progress_callback=None):
+    """Remove background using rembg and save PNG with alpha channel.
+
+    Returns the output file path.
+    """
+    from PIL import Image
+    from rembg import remove
+
+    _report(
+        progress_callback,
+        ProgressUpdate("loading", "Loading source image", 12),
+    )
+    img = Image.open(image_path)
+
+    _report(
+        progress_callback,
+        ProgressUpdate("removing", "Removing background", None, busy=True),
+    )
+    result = remove(img, 
+                    alpha_matting_foreground_threshold=270, 
+                    alpha_matting_background_threshold=15)
+
+    outpath = build_output_path(image_path)
+
+    _report(
+        progress_callback,
+        ProgressUpdate("saving", "Saving transparent PNG", 88),
+    )
+    # `result` is a PIL Image with transparency; save as PNG
+    result.save(outpath)
+
+    _report(
+        progress_callback,
+        ProgressUpdate("done", "Done", 100),
+    )
+    return outpath

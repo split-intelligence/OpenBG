@@ -1,6 +1,5 @@
 PySide6
-rembg[cpu]
 pillow
 opencv-python
 numpy
-onnxruntime
+rembg
