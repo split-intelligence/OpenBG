@@ -1,6 +1,6 @@
 .mypy_cache
 .pytest_cache
 bg_env
-/.onnx
+models/.onnx
 build
 dist
